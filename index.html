@@ -687,18 +687,7 @@
 
 <main class="main">
 
-  <!-- Backend URL Config -->
-  <div class="config-card">
-    <div class="config-label">⚙ Backend URL</div>
-    <input
-      class="config-input"
-      id="apiUrlInput"
-      type="text"
-      placeholder="https://YOUR_HF_USERNAME-smart-littering-detection.hf.space"
-      value=""
-    />
-    <button class="btn-check" onclick="checkBackend()">Check Connection</button>
-  </div>
+
 
   <!-- Error Box -->
   <div class="error-box" id="errorBox"></div>
@@ -827,26 +816,15 @@
 //  CONFIGURATION
 //  Paste your Hugging Face Space URL below
 // ══════════════════════════════════════════════════════
-let API_URL = "";
+let API_URL = "https://diwakar237-smart-littering-detection.hf.space";
 
-// ── On page load — restore saved URL ──────────────────
+// ── On page load — auto check backend ─────────────────
 window.addEventListener('load', () => {
-  const saved = localStorage.getItem('lw_api_url');
-  if (saved) {
-    document.getElementById('apiUrlInput').value = saved;
-    API_URL = saved;
-    checkBackend();
-  }
+  checkBackend();
 });
 
 // ── Backend connection check ───────────────────────────
 async function checkBackend() {
-  const input = document.getElementById('apiUrlInput').value.trim();
-  if (!input) { showError("Please enter your Hugging Face backend URL first."); return; }
-
-  API_URL = input.replace(/\/$/, '');   // remove trailing slash
-  localStorage.setItem('lw_api_url', API_URL);
-
   setApiStatus('checking', 'Checking…');
 
   try {
