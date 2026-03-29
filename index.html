@@ -3,1167 +3,1062 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>LitterWatch — AI Surveillance System</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet"/>
+<title>LitterWatch — Smart Littering Detection</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
 <style>
-:root {
-  --bg:       #020b06;
-  --deep:     #030f07;
-  --panel:    rgba(5,20,10,0.85);
-  --border:   rgba(0,255,100,0.15);
-  --glow:     #00ff64;
-  --glow2:    #00cc50;
-  --glow3:    #39ff8f;
-  --warn:     #ffcc00;
-  --danger:   #ff4444;
-  --dim:      rgba(0,255,100,0.35);
-  --text:     #c8ffe0;
-  --muted:    rgba(0,255,100,0.45);
-  --font-hud: 'Orbitron', monospace;
-  --font-mono:'Share Tech Mono', monospace;
-  --font-body:'Exo 2', sans-serif;
-}
+  :root {
+    --bg: #0b0f0e;
+    --surface: #111714;
+    --surface2: #182019;
+    --border: #1f2e21;
+    --accent: #4cff7e;
+    --accent-dim: #1e4a27;
+    --accent2: #ff4c4c;
+    --text: #e8f0e9;
+    --text-muted: #7a9980;
+    --text-dim: #3d5440;
+    --warn: #ffb84c;
+    --safe: #4cff7e;
+  }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
 
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font-body);
-  min-height: 100vh;
-  overflow-x: hidden;
-  cursor: crosshair;
-}
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(76,255,126,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(76,255,126,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
 
-/* ── SCANLINES OVERLAY ── */
-body::before {
-  content: '';
-  position: fixed; inset: 0; z-index: 1000;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0,0,0,0.07) 2px,
-    rgba(0,0,0,0.07) 4px
-  );
-  pointer-events: none;
-  animation: scanShift 8s linear infinite;
-}
-@keyframes scanShift { from{background-position:0 0} to{background-position:0 100px} }
+  header {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.2rem 2.5rem;
+    border-bottom: 1px solid var(--border);
+    background: rgba(11,15,14,0.85);
+    backdrop-filter: blur(12px);
+  }
 
-/* ── NOISE TEXTURE ── */
-body::after {
-  content: '';
-  position: fixed; inset: 0; z-index: 999;
-  opacity: 0.025;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  pointer-events: none;
-}
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
 
-/* ── CANVAS PARTICLES ── */
-#particles { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+  .logo-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
 
-/* ── CORNER DECORATIONS ── */
-.corner {
-  position: fixed; width: 60px; height: 60px; z-index: 10; pointer-events: none;
-  opacity: 0.6;
-}
-.corner-tl { top: 12px; left: 12px; border-top: 2px solid var(--glow); border-left: 2px solid var(--glow); }
-.corner-tr { top: 12px; right: 12px; border-top: 2px solid var(--glow); border-right: 2px solid var(--glow); }
-.corner-bl { bottom: 12px; left: 12px; border-bottom: 2px solid var(--glow); border-left: 2px solid var(--glow); }
-.corner-br { bottom: 12px; right: 12px; border-bottom: 2px solid var(--glow); border-right: 2px solid var(--glow); }
+  @keyframes pulse {
+    0%,100% { opacity:1; transform:scale(1); }
+    50% { opacity:0.5; transform:scale(0.85); }
+  }
 
-/* ── NAV ── */
-nav {
-  position: sticky; top: 0; z-index: 500;
-  height: 60px;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 2rem;
-  background: rgba(2,11,6,0.92);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 0 40px rgba(0,255,100,0.05);
-}
-.logo {
-  font-family: var(--font-hud);
-  font-size: 1.1rem; font-weight: 900;
-  letter-spacing: 0.15em;
-  color: var(--glow);
-  text-shadow: 0 0 20px var(--glow), 0 0 40px rgba(0,255,100,0.3);
-  display: flex; align-items: center; gap: 10px;
-}
-.logo-bracket { color: var(--muted); font-weight: 400; }
-.nav-status {
-  display: flex; align-items: center; gap: 20px;
-}
-.status-pill {
-  font-family: var(--font-mono); font-size: 0.68rem;
-  letter-spacing: 0.1em;
-  padding: 4px 12px; border-radius: 2px;
-  border: 1px solid var(--border);
-  color: var(--muted);
-  background: rgba(0,255,100,0.04);
-}
-.status-pill.live {
-  border-color: rgba(0,255,100,0.5);
-  color: var(--glow);
-  animation: pulse-border 2s ease-in-out infinite;
-}
-@keyframes pulse-border {
-  0%,100%{ box-shadow: 0 0 0 rgba(0,255,100,0); }
-  50%    { box-shadow: 0 0 12px rgba(0,255,100,0.25); }
-}
-.live-dot {
-  display: inline-block; width: 6px; height: 6px;
-  border-radius: 50%; background: var(--glow);
-  margin-right: 6px;
-  animation: blink 1.2s step-end infinite;
-  box-shadow: 0 0 6px var(--glow);
-}
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-.sys-time {
-  font-family: var(--font-mono); font-size: 0.72rem;
-  color: var(--muted); letter-spacing: 0.08em;
-}
+  .header-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid var(--accent);
+    padding: 0.2rem 0.6rem;
+    border-radius: 2px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
 
-/* ── HERO ── */
-.hero {
-  position: relative; z-index: 2;
-  padding: 64px 2rem 48px;
-  text-align: center;
-  max-width: 800px; margin: 0 auto;
-}
-.hero-eyebrow {
-  font-family: var(--font-mono); font-size: 0.7rem;
-  letter-spacing: 0.2em; text-transform: uppercase;
-  color: var(--muted); margin-bottom: 24px;
-  display: flex; align-items: center; justify-content: center; gap: 12px;
-}
-.hero-eyebrow::before, .hero-eyebrow::after {
-  content: ''; flex: 1; max-width: 80px;
-  height: 1px; background: linear-gradient(90deg, transparent, var(--border));
-}
-.hero-eyebrow::after { background: linear-gradient(90deg, var(--border), transparent); }
+  /* API Status indicator */
+  .api-status {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+  }
 
-h1 {
-  font-family: var(--font-hud);
-  font-size: clamp(2rem, 5.5vw, 3.8rem);
-  font-weight: 900;
-  letter-spacing: 0.06em;
-  line-height: 1.08;
-  margin-bottom: 20px;
-  text-transform: uppercase;
-}
-.h1-line1 { color: var(--text); }
-.h1-line2 {
-  color: var(--glow);
-  text-shadow: 0 0 30px rgba(0,255,100,0.5), 0 0 60px rgba(0,255,100,0.2);
-  display: block;
-}
-.hero-sub {
-  font-size: 0.95rem; color: rgba(200,255,224,0.5);
-  line-height: 1.7; max-width: 480px; margin: 0 auto 32px;
-  font-weight: 300; letter-spacing: 0.02em;
-}
-.hero-stats-row {
-  display: flex; justify-content: center; gap: 32px;
-  flex-wrap: wrap;
-}
-.hero-stat {
-  text-align: center;
-}
-.hero-stat-val {
-  font-family: var(--font-hud); font-size: 1.4rem; font-weight: 700;
-  color: var(--glow);
-  text-shadow: 0 0 16px rgba(0,255,100,0.4);
-}
-.hero-stat-lbl {
-  font-family: var(--font-mono); font-size: 0.62rem;
-  color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase;
-  margin-top: 2px;
-}
+  .api-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--text-dim);
+  }
 
-/* ── MAIN GRID ── */
-.grid {
-  position: relative; z-index: 2;
-  max-width: 1100px; margin: 0 auto;
-  padding: 0 2rem 80px;
-  display: grid;
-  grid-template-columns: 1fr 360px;
-  gap: 20px;
-}
+  .api-dot.online { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .api-dot.offline { background: var(--accent2); }
+  .api-dot.checking { background: var(--warn); animation: pulse 1s infinite; }
 
-/* ── PANELS ── */
-.panel {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  backdrop-filter: blur(12px);
-  position: relative;
-  overflow: hidden;
-}
-/* top-left bracket accent */
-.panel::before {
-  content: '';
-  position: absolute; top: -1px; left: -1px;
-  width: 24px; height: 24px;
-  border-top: 2px solid var(--glow);
-  border-left: 2px solid var(--glow);
-  pointer-events: none;
-}
-.panel::after {
-  content: '';
-  position: absolute; bottom: -1px; right: -1px;
-  width: 24px; height: 24px;
-  border-bottom: 2px solid var(--glow2);
-  border-right: 2px solid var(--glow2);
-  pointer-events: none;
-}
+  .hero {
+    position: relative;
+    z-index: 1;
+    padding: 5rem 2.5rem 3rem;
+    max-width: 860px;
+    margin: 0 auto;
+    text-align: center;
+  }
 
-.panel-header {
-  padding: 14px 20px;
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
-}
-.panel-title {
-  font-family: var(--font-hud); font-size: 0.65rem;
-  letter-spacing: 0.2em; text-transform: uppercase;
-  color: var(--glow); display: flex; align-items: center; gap: 8px;
-}
-.panel-title .icon { font-size: 0.8rem; }
-.panel-id {
-  font-family: var(--font-mono); font-size: 0.6rem;
-  color: var(--muted); letter-spacing: 0.1em;
-}
+  .hero-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 1.2rem;
+  }
 
-/* ── DROP ZONE ── */
-.drop-zone {
-  margin: 20px;
-  border: 1px dashed rgba(0,255,100,0.25);
-  border-radius: 4px;
-  padding: 44px 20px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.35s cubic-bezier(.4,0,.2,1);
-  position: relative; overflow: hidden;
-  background: rgba(0,255,100,0.015);
-}
-.drop-zone::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: radial-gradient(ellipse at center, rgba(0,255,100,0.06) 0%, transparent 70%);
-  opacity: 0; transition: opacity 0.35s;
-}
-.drop-zone:hover::before, .drop-zone.drag-over::before { opacity: 1; }
-.drop-zone:hover, .drop-zone.drag-over {
-  border-color: var(--glow);
-  box-shadow: 0 0 30px rgba(0,255,100,0.1), inset 0 0 30px rgba(0,255,100,0.04);
-}
-.drop-zone input[type="file"] {
-  position: absolute; inset: 0; opacity: 0; cursor: pointer; z-index: 2;
-}
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(2.2rem, 6vw, 4rem);
+    line-height: 1.05;
+    letter-spacing: -1.5px;
+    margin-bottom: 1.2rem;
+    background: linear-gradient(135deg, #e8f0e9 30%, #4cff7e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
 
-/* Radar animation inside drop zone */
-.radar-wrap {
-  width: 80px; height: 80px;
-  margin: 0 auto 16px;
-  position: relative; display: flex; align-items: center; justify-content: center;
-}
-.radar-ring {
-  position: absolute; border-radius: 50%;
-  border: 1px solid rgba(0,255,100,0.2);
-  animation: radarExpand 2.4s ease-out infinite;
-}
-.radar-ring:nth-child(2) { animation-delay: 0.8s; }
-.radar-ring:nth-child(3) { animation-delay: 1.6s; }
-@keyframes radarExpand {
-  0%   { width: 0;    height: 0;    opacity: 0.8; }
-  100% { width: 80px; height: 80px; opacity: 0;   }
-}
-.radar-core {
-  width: 40px; height: 40px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(0,255,100,0.2) 0%, transparent 70%);
-  border: 1px solid rgba(0,255,100,0.4);
-  display: grid; place-items: center;
-  font-size: 18px; z-index: 1;
-  box-shadow: 0 0 20px rgba(0,255,100,0.15);
-}
-.drop-title {
-  font-family: var(--font-hud); font-size: 0.75rem;
-  letter-spacing: 0.15em; color: var(--text); margin-bottom: 6px;
-}
-.drop-sub {
-  font-family: var(--font-mono); font-size: 0.68rem; color: var(--muted);
-  letter-spacing: 0.05em;
-}
+  .hero p {
+    color: var(--text-muted);
+    font-size: 1.05rem;
+    line-height: 1.7;
+    max-width: 560px;
+    margin: 0 auto;
+  }
 
-/* ── FILE PREVIEW ── */
-#filePreview {
-  margin: 0 20px 16px;
-  background: rgba(0,255,100,0.04);
-  border: 1px solid rgba(0,255,100,0.2);
-  border-radius: 4px;
-  padding: 12px 14px;
-  display: none; align-items: center; gap: 12px;
-}
-#filePreview.visible { display: flex; }
-.file-thumb {
-  width: 40px; height: 40px; border-radius: 3px;
-  background: rgba(0,255,100,0.1);
-  border: 1px solid var(--border);
-  display: grid; place-items: center; font-size: 18px; flex-shrink: 0;
-}
-.file-info { flex: 1; overflow: hidden; }
-.file-name {
-  font-family: var(--font-mono); font-weight: 400; font-size: 0.78rem;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  color: var(--glow);
-}
-.file-size { font-family: var(--font-mono); font-size: 0.65rem; color: var(--muted); }
-.remove-btn {
-  background: none; border: 1px solid transparent; color: var(--muted);
-  cursor: pointer; font-size: 14px; padding: 4px 8px; border-radius: 3px;
-  transition: all 0.2s; font-family: var(--font-mono);
-}
-.remove-btn:hover { color: var(--danger); border-color: rgba(255,68,68,0.3); }
+  .main {
+    position: relative;
+    z-index: 1;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 2rem 4rem;
+  }
 
-/* ── OPTIONS ── */
-.options-grid {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 12px; margin: 0 20px 16px;
-}
-.opt-group label {
-  font-family: var(--font-mono); font-size: 0.62rem;
-  color: var(--muted); text-transform: uppercase;
-  letter-spacing: 0.1em; display: block; margin-bottom: 6px;
-}
-.opt-group select {
-  width: 100%;
-  background: rgba(0,255,100,0.03);
-  border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: 3px;
-  padding: 8px 10px;
-  font-family: var(--font-mono); font-size: 0.75rem;
-  appearance: none; cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  letter-spacing: 0.04em;
-}
-.opt-group select:focus {
-  outline: none; border-color: var(--glow);
-  box-shadow: 0 0 12px rgba(0,255,100,0.12);
-}
-.opt-group select option { background: #030f07; }
+  /* Backend URL config box */
+  .config-card {
+    background: var(--surface2);
+    border: 1px solid var(--accent-dim);
+    border-radius: 10px;
+    padding: 1rem 1.4rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
 
-.conf-group { grid-column: 1 / -1; }
-.slider-row { display: flex; align-items: center; gap: 10px; }
-input[type="range"] {
-  flex: 1; appearance: none; height: 3px;
-  background: linear-gradient(90deg, var(--glow) var(--pct, 50%), rgba(0,255,100,0.1) var(--pct, 50%));
-  border-radius: 2px; cursor: pointer;
-  transition: background 0.1s;
-}
-input[type="range"]::-webkit-slider-thumb {
-  appearance: none; width: 14px; height: 14px;
-  background: var(--bg); border: 2px solid var(--glow);
-  border-radius: 50%;
-  box-shadow: 0 0 10px rgba(0,255,100,0.5);
-  transition: transform 0.15s, box-shadow 0.15s;
-}
-input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.3); box-shadow: 0 0 18px rgba(0,255,100,0.7);
-}
-#confVal {
-  font-family: var(--font-hud); font-size: 0.75rem;
-  color: var(--glow); min-width: 38px; text-align: right;
-  text-shadow: 0 0 10px rgba(0,255,100,0.4);
-}
+  .config-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
 
-/* ── PROGRESS ── */
-#progressWrap {
-  display: none; margin: 0 20px 16px;
-}
-#progressWrap.visible { display: block; }
-.progress-header {
-  font-family: var(--font-mono); font-size: 0.65rem;
-  color: var(--muted); letter-spacing: 0.08em;
-  display: flex; justify-content: space-between; margin-bottom: 8px;
-}
-#progressPct { color: var(--glow); }
-.progress-track {
-  height: 4px; background: rgba(0,255,100,0.08);
-  border-radius: 2px; overflow: visible; position: relative;
-}
-.progress-fill {
-  height: 100%; width: 0%;
-  background: linear-gradient(90deg, var(--glow2), var(--glow), var(--glow3));
-  border-radius: 2px;
-  transition: width 0.3s ease;
-  position: relative;
-  box-shadow: 0 0 12px var(--glow), 0 0 24px rgba(0,255,100,0.3);
-}
-.progress-fill::after {
-  content: '';
-  position: absolute; right: -1px; top: -3px; bottom: -3px; width: 3px;
-  background: white; border-radius: 2px;
-  box-shadow: 0 0 8px white, 0 0 16px var(--glow);
-  opacity: 0.9;
-}
-.stage-list {
-  display: flex; gap: 0; margin-top: 10px; overflow: hidden;
-}
-.stage {
-  flex: 1; text-align: center;
-  font-family: var(--font-mono); font-size: 0.56rem;
-  color: rgba(0,255,100,0.2); letter-spacing: 0.05em;
-  padding: 4px 2px; border-top: 1px solid rgba(0,255,100,0.1);
-  transition: color 0.3s;
-  text-transform: uppercase;
-}
-.stage.active { color: var(--glow); border-top-color: var(--glow); }
-.stage.done   { color: var(--glow2); border-top-color: var(--glow2); }
+  .config-input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.5rem 0.8rem;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    outline: none;
+    min-width: 200px;
+  }
 
-/* ── ANALYZE BUTTON ── */
-.btn-analyze {
-  display: block; width: calc(100% - 40px);
-  margin: 0 20px 20px;
-  padding: 16px;
-  background: transparent;
-  border: 1px solid var(--glow);
-  color: var(--glow);
-  border-radius: 3px;
-  font-family: var(--font-hud); font-size: 0.75rem;
-  font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
-  cursor: pointer;
-  position: relative; overflow: hidden;
-  transition: all 0.3s;
-  text-shadow: 0 0 10px rgba(0,255,100,0.5);
-}
-.btn-analyze::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(135deg, var(--glow) 0%, var(--glow2) 100%);
-  opacity: 0; transition: opacity 0.3s;
-}
-.btn-analyze::after {
-  content: '';
-  position: absolute; top: 0; left: -100%;
-  width: 100%; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
-  transition: left 0.5s ease;
-}
-.btn-analyze:hover:not(:disabled)::before { opacity: 1; }
-.btn-analyze:hover:not(:disabled)::after  { left: 100%; }
-.btn-analyze:hover:not(:disabled) {
-  color: var(--bg);
-  box-shadow: 0 0 30px rgba(0,255,100,0.4), 0 0 60px rgba(0,255,100,0.15);
-  text-shadow: none;
-}
-.btn-analyze span { position: relative; z-index: 1; }
-.btn-analyze:disabled {
-  border-color: rgba(0,255,100,0.12);
-  color: rgba(0,255,100,0.2);
-  cursor: not-allowed; text-shadow: none;
-}
+  .config-input:focus { border-color: var(--accent); }
 
-/* ── SIDEBAR ── */
-.sidebar { display: flex; flex-direction: column; gap: 16px; }
+  .btn-check {
+    background: var(--accent-dim);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
 
-/* ── RADAR DISPLAY ── */
-.radar-display {
-  padding: 20px;
-  display: flex; flex-direction: column; align-items: center; gap: 12px;
-}
-.radar-svg-wrap {
-  width: 160px; height: 160px; position: relative;
-}
-.radar-svg-wrap svg { width: 100%; height: 100%; }
-.radar-label {
-  font-family: var(--font-mono); font-size: 0.62rem;
-  color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase;
-  text-align: center;
-}
+  .btn-check:hover { background: var(--accent); color: var(--bg); }
 
-/* ── STATS GRID ── */
-.stats-grid {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 1px; background: var(--border);
-}
-.stat-cell {
-  background: var(--panel);
-  padding: 16px 14px;
-  transition: background 0.25s;
-  position: relative;
-}
-.stat-cell:hover { background: rgba(0,255,100,0.05); }
-.stat-val {
-  font-family: var(--font-hud); font-size: 1.6rem; font-weight: 700;
-  line-height: 1; letter-spacing: -0.02em;
-  margin-bottom: 4px;
-}
-.stat-val.g { color: var(--glow); text-shadow: 0 0 16px rgba(0,255,100,0.4); }
-.stat-val.y { color: var(--warn); text-shadow: 0 0 16px rgba(255,204,0,0.4); }
-.stat-val.r { color: var(--danger); text-shadow: 0 0 16px rgba(255,68,68,0.4); }
-.stat-lbl {
-  font-family: var(--font-mono); font-size: 0.58rem;
-  color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em;
-}
+  .upload-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+  }
 
-/* ── LOG ── */
-.log-body { max-height: 240px; overflow-y: auto; padding: 10px; }
-.log-body::-webkit-scrollbar { width: 4px; }
-.log-body::-webkit-scrollbar-track { background: transparent; }
-.log-body::-webkit-scrollbar-thumb { background: rgba(0,255,100,0.2); border-radius: 2px; }
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 3rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
 
-.log-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px 10px; border-radius: 2px;
-  margin-bottom: 4px;
-  background: rgba(0,255,100,0.03);
-  border: 1px solid rgba(0,255,100,0.08);
-  font-family: var(--font-mono); font-size: 0.72rem;
-  animation: logIn 0.4s cubic-bezier(.4,0,.2,1) both;
-  position: relative; overflow: hidden;
-}
-.log-item::before {
-  content: '';
-  position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
-}
-.log-item.hi .log-dot { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
-.log-item.hi::before { background: var(--danger); }
-.log-item.md .log-dot { background: var(--warn); box-shadow: 0 0 6px var(--warn); }
-.log-item.md::before { background: var(--warn); }
-.log-item.lo .log-dot { background: var(--glow); box-shadow: 0 0 6px var(--glow); }
-.log-item.lo::before { background: var(--glow); }
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--accent);
+    background: rgba(76,255,126,0.03);
+  }
 
-@keyframes logIn {
-  from { opacity:0; transform: translateX(16px); }
-  to   { opacity:1; transform: translateX(0); }
-}
-.log-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-.log-frame { flex: 1; color: var(--text); }
-.log-conf { color: var(--muted); }
+  .upload-icon {
+    width: 56px; height: 56px;
+    margin: 0 auto 1.2rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    transition: transform 0.3s;
+  }
 
-/* ── EMPTY STATE ── */
-.empty {
-  padding: 28px 12px; text-align: center;
-}
-.empty-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.3; }
-.empty-text {
-  font-family: var(--font-mono); font-size: 0.68rem;
-  color: var(--muted); line-height: 1.6; letter-spacing: 0.04em;
-}
+  .upload-zone:hover .upload-icon { transform: translateY(-4px); border-color: var(--accent); }
 
-/* ── DOWNLOAD BTN ── */
-.btn-dl {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  margin: 0 10px 10px;
-  padding: 11px;
-  background: rgba(0,255,100,0.06);
-  border: 1px solid rgba(0,255,100,0.3);
-  color: var(--glow);
-  border-radius: 3px;
-  font-family: var(--font-hud); font-size: 0.65rem;
-  font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase;
-  cursor: pointer; transition: all 0.25s;
-  text-decoration: none;
-}
-.btn-dl:hover {
-  background: rgba(0,255,100,0.12);
-  box-shadow: 0 0 20px rgba(0,255,100,0.15);
-}
+  .upload-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 0.4rem;
+  }
 
-/* ── MODEL CHIPS ── */
-.chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 14px; }
-.chip {
-  font-family: var(--font-mono); font-size: 0.62rem;
-  padding: 4px 10px; border-radius: 2px;
-  border: 1px solid var(--border); color: var(--muted);
-  letter-spacing: 0.08em;
-  transition: all 0.2s;
-}
-.chip.on {
-  border-color: rgba(0,255,100,0.4); color: var(--glow);
-  background: rgba(0,255,100,0.06);
-  box-shadow: 0 0 8px rgba(0,255,100,0.1);
-}
+  .upload-sub { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.2rem; }
 
-/* ── TOAST ── */
-#toast {
-  position: fixed; bottom: 24px; left: 50%;
-  transform: translateX(-50%) translateY(80px);
-  background: rgba(2,11,6,0.95);
-  border: 1px solid var(--border);
-  backdrop-filter: blur(16px);
-  padding: 12px 20px; border-radius: 3px;
-  font-family: var(--font-mono); font-size: 0.75rem;
-  z-index: 2000; transition: transform 0.35s cubic-bezier(.4,0,.2,1);
-  display: flex; align-items: center; gap: 10px;
-  letter-spacing: 0.05em;
-  box-shadow: 0 0 40px rgba(0,0,0,0.6);
-}
-#toast.show { transform: translateX(-50%) translateY(0); }
-#toast.success { border-color: rgba(0,255,100,0.5); color: var(--glow); }
-#toast.error   { border-color: rgba(255,68,68,0.5);  color: var(--danger); }
+  .btn-upload {
+    display: inline-block;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--bg);
+    background: var(--accent);
+    border: none;
+    padding: 0.6rem 1.4rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
 
-/* ── ANIMATIONS ── */
-.fade-up {
-  opacity: 0; transform: translateY(20px);
-  animation: fadeUp 0.7s cubic-bezier(.4,0,.2,1) forwards;
-}
-@keyframes fadeUp {
-  to { opacity: 1; transform: translateY(0); }
-}
-.delay-1 { animation-delay: 0.1s; }
-.delay-2 { animation-delay: 0.2s; }
-.delay-3 { animation-delay: 0.35s; }
+  .btn-upload:hover { background: #6fffaa; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(76,255,126,0.25); }
 
-/* ── RESPONSIVE ── */
-@media (max-width: 740px) {
-  .grid { grid-template-columns: 1fr; }
-  h1 { font-size: 1.8rem; }
-}
+  #fileInput { display: none; }
+
+  .file-preview {
+    display: none;
+    margin-top: 1.2rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .file-preview.show { display: flex; }
+
+  .file-icon-wrap {
+    width: 44px; height: 44px;
+    background: var(--accent-dim);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+  }
+
+  .file-info { flex: 1; overflow: hidden; }
+
+  .file-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--accent);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .file-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem; }
+
+  .remove-file {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .remove-file:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  .settings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .setting-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.2rem;
+  }
+
+  .setting-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.6rem;
+  }
+
+  .setting-value {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+  }
+
+  input[type=range] {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    outline: none;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(76,255,126,0.4);
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+  }
+
+  .toggle-label { font-size: 0.82rem; color: var(--text-muted); }
+
+  .toggle { position: relative; width: 36px; height: 20px; cursor: pointer; }
+  .toggle input { display: none; }
+
+  .toggle-track {
+    position: absolute;
+    inset: 0;
+    background: var(--border);
+    border-radius: 10px;
+    transition: background 0.2s;
+  }
+
+  .toggle-thumb {
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 14px; height: 14px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    transition: all 0.2s;
+  }
+
+  .toggle input:checked ~ .toggle-track { background: var(--accent-dim); border: 1px solid var(--accent); }
+  .toggle input:checked ~ .toggle-thumb { left: 19px; background: var(--accent); }
+
+  .btn-analyze {
+    width: 100%;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1rem;
+    color: var(--bg);
+    background: var(--accent);
+    border: none;
+    padding: 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.25s;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-analyze::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.5s;
+  }
+
+  .btn-analyze:hover:not(:disabled)::after { transform: translateX(100%); }
+  .btn-analyze:hover:not(:disabled) { background: #6fffaa; box-shadow: 0 8px 30px rgba(76,255,126,0.3); }
+  .btn-analyze:disabled { background: var(--border); color: var(--text-dim); cursor: not-allowed; }
+
+  /* Error message */
+  .error-box {
+    display: none;
+    background: rgba(255,76,76,0.08);
+    border: 1px solid rgba(255,76,76,0.3);
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.85rem;
+    color: var(--accent2);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .error-box.show { display: block; }
+
+  .progress-wrap {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .progress-wrap.show { display: block; }
+
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .progress-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.95rem; }
+  .progress-pct { font-family: 'DM Mono', monospace; font-size: 0.85rem; color: var(--accent); }
+
+  .progress-bar {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 0.8rem;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+    border-radius: 3px;
+    width: 0%;
+    transition: width 0.4s ease;
+    box-shadow: 0 0 10px rgba(76,255,126,0.4);
+  }
+
+  .progress-stage {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+  }
+
+  .results-wrap { display: none; }
+  .results-wrap.show { display: block; }
+
+  .results-header {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.3rem;
+    margin-bottom: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+  }
+
+  .results-header span {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+
+  .verdict-card {
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+  }
+
+  .verdict-card.littering { background: rgba(255,76,76,0.07); border: 1px solid rgba(255,76,76,0.3); }
+  .verdict-card.clean { background: rgba(76,255,126,0.05); border: 1px solid rgba(76,255,126,0.25); }
+
+  .verdict-icon { font-size: 2.5rem; flex-shrink: 0; line-height: 1; }
+
+  .verdict-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 0.3rem; }
+  .verdict-card.littering .verdict-title { color: var(--accent2); }
+  .verdict-card.clean .verdict-title { color: var(--safe); }
+
+  .verdict-desc { color: var(--text-muted); font-size: 0.88rem; line-height: 1.5; }
+
+  .confidence-pill {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  .littering .confidence-pill { background: rgba(255,76,76,0.15); color: var(--accent2); }
+  .clean .confidence-pill { background: rgba(76,255,126,0.12); color: var(--safe); }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.8rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .stat-num { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.6rem; color: var(--accent); line-height: 1; margin-bottom: 0.3rem; }
+  .stat-lbl { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .timeline-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .timeline-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.7rem;
+    margin-bottom: 1.2rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .timeline { display: flex; flex-direction: column; gap: 0.6rem; }
+
+  .timeline-event {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.7rem;
+    border-radius: 6px;
+    background: var(--surface2);
+    border-left: 3px solid transparent;
+    animation: slideIn 0.4s ease forwards;
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+
+  @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
+
+  .timeline-event.alert { border-left-color: var(--accent2); }
+  .timeline-event.ok { border-left-color: var(--accent); }
+  .timeline-event.info { border-left-color: var(--warn); }
+
+  .evt-time { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--text-muted); flex-shrink: 0; width: 44px; }
+  .evt-label { font-size: 0.82rem; flex: 1; }
+
+  .evt-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .timeline-event.alert .evt-badge { background: rgba(255,76,76,0.15); color: var(--accent2); }
+  .timeline-event.ok .evt-badge { background: rgba(76,255,126,0.1); color: var(--accent); }
+  .timeline-event.info .evt-badge { background: rgba(255,184,76,0.1); color: var(--warn); }
+
+  .btn-report {
+    display: inline-block;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--bg);
+    background: var(--accent);
+    border: none;
+    padding: 0.7rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    margin-top: 1rem;
+  }
+
+  .btn-report:hover { background: #6fffaa; transform: translateY(-1px); }
+
+  footer {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 2rem;
+    border-top: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 640px) {
+    .settings-grid { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    header { padding: 1rem 1.2rem; }
+    .hero { padding: 3rem 1.2rem 2rem; }
+    .main { padding: 0 1.2rem 3rem; }
+    .config-card { flex-direction: column; align-items: stretch; }
+  }
 </style>
 </head>
 <body>
 
-<canvas id="particles"></canvas>
-
-<!-- Corner brackets -->
-<div class="corner corner-tl"></div>
-<div class="corner corner-tr"></div>
-<div class="corner corner-bl"></div>
-<div class="corner corner-br"></div>
-
-<!-- NAV -->
-<nav>
+<header>
   <div class="logo">
-    <span class="logo-bracket">[</span>LITTER<span style="color:var(--text)">WATCH</span><span class="logo-bracket">]</span>
+    <div class="logo-dot"></div>
+    LitterWatch
   </div>
-  <div class="nav-status">
-    <span class="status-pill live"><span class="live-dot"></span>SYSTEM ONLINE</span>
-    <span class="sys-time" id="sysTime">00:00:00</span>
+  <div style="display:flex; align-items:center; gap:1rem;">
+    <div class="api-status">
+      <div class="api-dot checking" id="apiDot"></div>
+      <span id="apiStatusText">Checking backend…</span>
+    </div>
+    <div class="header-badge">AI Detection v2.0</div>
   </div>
-</nav>
+</header>
 
-<!-- HERO -->
-<div class="hero fade-up">
-  <div class="hero-eyebrow">AI-POWERED ENVIRONMENTAL SURVEILLANCE</div>
-  <h1>
-    <span class="h1-line1">DETECT. ANALYZE.</span>
-    <span class="h1-line2">ELIMINATE LITTERING.</span>
-  </h1>
-  <p class="hero-sub">
-    Upload surveillance footage. Our YOLOv8 + MediaPipe neural pipeline identifies littering events with precision — frame by frame.
-  </p>
-  <div class="hero-stats-row">
-    <div class="hero-stat">
-      <div class="hero-stat-val">YOLOv8</div>
-      <div class="hero-stat-lbl">Object Detection</div>
+<section class="hero">
+  <div class="hero-label">Smart Littering Detection System</div>
+  <h1>Catch Every<br/>Littering Incident</h1>
+  <p>Upload surveillance or field footage and our AI model will analyse each frame to detect littering behaviour — with timestamped alerts and confidence scores.</p>
+</section>
+
+<main class="main">
+
+
+
+  <!-- Error Box -->
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- Upload -->
+  <div class="upload-card">
+    <div class="upload-zone" id="dropZone">
+      <div class="upload-icon">🎬</div>
+      <div class="upload-title">Drop your video here</div>
+      <div class="upload-sub">MP4, MOV, AVI, MKV — up to 500 MB</div>
+      <button class="btn-upload" onclick="document.getElementById('fileInput').click()">Choose File</button>
+      <input type="file" id="fileInput" accept="video/*"/>
     </div>
-    <div class="hero-stat">
-      <div class="hero-stat-val" style="color:var(--warn)">MP</div>
-      <div class="hero-stat-lbl">MediaPipe Pose</div>
+    <div class="file-preview" id="filePreview">
+      <div class="file-icon-wrap">📹</div>
+      <div class="file-info">
+        <div class="file-name" id="fileName">video.mp4</div>
+        <div class="file-meta" id="fileMeta">— · ready to analyse</div>
+      </div>
+      <button class="remove-file" id="removeFile">✕</button>
     </div>
-    <div class="hero-stat">
-      <div class="hero-stat-val" style="color:var(--glow3)">PDF</div>
-      <div class="hero-stat-lbl">Auto Reports</div>
-    </div>
-    <div class="hero-stat">
-      <div class="hero-stat-val">FAST</div>
-      <div class="hero-stat-lbl">FastAPI Backend</div>
-    </div>
-  </div>
-</div>
-
-<!-- MAIN GRID -->
-<div class="grid">
-
-  <!-- LEFT -->
-  <div style="display:flex;flex-direction:column;gap:16px;">
-
-    <!-- UPLOAD PANEL -->
-    <div class="panel fade-up delay-1">
-      <div class="panel-header">
-        <div class="panel-title"><span class="icon">📡</span> VIDEO INPUT FEED</div>
-        <div class="panel-id">MOD-VID-01</div>
-      </div>
-
-      <!-- DROP ZONE -->
-      <div class="drop-zone" id="dropZone">
-        <input type="file" id="fileInput" accept="video/*"/>
-        <div class="radar-wrap">
-          <div class="radar-ring"></div>
-          <div class="radar-ring"></div>
-          <div class="radar-ring"></div>
-          <div class="radar-core">🎬</div>
-        </div>
-        <div class="drop-title">DROP VIDEO FILE</div>
-        <div class="drop-sub">MP4 · AVI · MOV · MKV &nbsp;/&nbsp; MAX 500MB</div>
-      </div>
-
-      <!-- FILE PREVIEW -->
-      <div id="filePreview">
-        <div class="file-thumb">🎥</div>
-        <div class="file-info">
-          <div class="file-name" id="fileName">—</div>
-          <div class="file-size" id="fileSize">—</div>
-        </div>
-        <button class="remove-btn" id="removeFile">✕ CLEAR</button>
-      </div>
-
-      <!-- OPTIONS -->
-      <div class="options-grid">
-        <div class="opt-group">
-          <label>Detection Model</label>
-          <select id="modelSel">
-            <option value="yolov8n">YOLOv8 Nano</option>
-            <option value="yolov8s" selected>YOLOv8 Small</option>
-            <option value="yolov8m">YOLOv8 Medium</option>
-            <option value="yolov8l">YOLOv8 Large</option>
-          </select>
-        </div>
-        <div class="opt-group">
-          <label>Frame Sampling</label>
-          <select id="frameSel">
-            <option value="5">Every 5 frames</option>
-            <option value="10" selected>Every 10 frames</option>
-            <option value="15">Every 15 frames</option>
-            <option value="30">Every 30 frames</option>
-          </select>
-        </div>
-        <div class="opt-group conf-group">
-          <label>Confidence Threshold</label>
-          <div class="slider-row">
-            <input type="range" id="confSlider" min="0.1" max="0.95" step="0.05" value="0.5"/>
-            <span id="confVal">0.50</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- PROGRESS -->
-      <div id="progressWrap">
-        <div class="progress-header">
-          <span id="progressStage">INITIALIZING…</span>
-          <span id="progressPct">0%</span>
-        </div>
-        <div class="progress-track">
-          <div class="progress-fill" id="progressFill"></div>
-        </div>
-        <div class="stage-list">
-          <div class="stage" id="s0">UPLOAD</div>
-          <div class="stage" id="s1">EXTRACT</div>
-          <div class="stage" id="s2">DETECT</div>
-          <div class="stage" id="s3">TRACK</div>
-          <div class="stage" id="s4">REPORT</div>
-        </div>
-      </div>
-
-      <!-- BUTTON -->
-      <button class="btn-analyze" id="analyzeBtn" disabled>
-        <span>⬡ &nbsp;INITIATE SCAN SEQUENCE</span>
-      </button>
-    </div>
-
   </div>
 
-  <!-- RIGHT SIDEBAR -->
-  <div class="sidebar">
-
-    <!-- RADAR PANEL -->
-    <div class="panel fade-up delay-2">
-      <div class="panel-header">
-        <div class="panel-title"><span class="icon">🔄</span> SCAN RADAR</div>
-        <div class="panel-id">MOD-RAD-02</div>
+  <!-- Settings -->
+  <div class="settings-grid">
+    <div class="setting-card">
+      <div class="setting-label">Confidence Threshold</div>
+      <div class="setting-value" id="confVal">72%</div>
+      <input type="range" min="40" max="99" value="72" id="confRange"
+        oninput="document.getElementById('confVal').textContent=this.value+'%'"/>
+    </div>
+    <div class="setting-card">
+      <div class="setting-label">Analysis Options</div>
+      <div class="toggle-row" style="margin-top:0.3rem;">
+        <span class="toggle-label">Track individuals</span>
+        <label class="toggle">
+          <input type="checkbox" checked id="toggleTrack"/>
+          <span class="toggle-track"></span>
+          <span class="toggle-thumb"></span>
+        </label>
       </div>
-      <div class="radar-display">
-        <div class="radar-svg-wrap">
-          <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <radialGradient id="rg" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stop-color="#00ff64" stop-opacity="0.15"/>
-                <stop offset="100%" stop-color="#00ff64" stop-opacity="0"/>
-              </radialGradient>
-            </defs>
-            <!-- Grid circles -->
-            <circle cx="80" cy="80" r="72" fill="none" stroke="rgba(0,255,100,0.1)" stroke-width="1"/>
-            <circle cx="80" cy="80" r="54" fill="none" stroke="rgba(0,255,100,0.1)" stroke-width="1"/>
-            <circle cx="80" cy="80" r="36" fill="none" stroke="rgba(0,255,100,0.1)" stroke-width="1"/>
-            <circle cx="80" cy="80" r="18" fill="none" stroke="rgba(0,255,100,0.15)" stroke-width="1"/>
-            <!-- Cross hairs -->
-            <line x1="80" y1="4" x2="80" y2="156" stroke="rgba(0,255,100,0.1)" stroke-width="1"/>
-            <line x1="4" y1="80" x2="156" y2="80" stroke="rgba(0,255,100,0.1)" stroke-width="1"/>
-            <line x1="29" y1="29" x2="131" y2="131" stroke="rgba(0,255,100,0.06)" stroke-width="1"/>
-            <line x1="131" y1="29" x2="29" y2="131" stroke="rgba(0,255,100,0.06)" stroke-width="1"/>
-            <!-- Sweep -->
-            <g id="radarSweep" style="transform-origin:80px 80px">
-              <path d="M80,80 L80,8 A72,72 0,0,1,138,116 Z" fill="url(#rg)" opacity="0.5"/>
-              <line x1="80" y1="80" x2="80" y2="8" stroke="#00ff64" stroke-width="1.5" opacity="0.8"/>
-            </g>
-            <!-- Center dot -->
-            <circle cx="80" cy="80" r="4" fill="#00ff64" opacity="0.8"/>
-            <circle cx="80" cy="80" r="8" fill="none" stroke="#00ff64" stroke-width="1" opacity="0.4"/>
-            <!-- Blips (shown after detection) -->
-            <circle id="blip1" cx="110" cy="52" r="3" fill="#ff4444" opacity="0" class="radar-blip"/>
-            <circle id="blip2" cx="58"  cy="98" r="3" fill="#ffcc00" opacity="0" class="radar-blip"/>
-            <circle id="blip3" cx="96"  cy="112" r="2" fill="#00ff64" opacity="0" class="radar-blip"/>
-          </svg>
-        </div>
-        <div class="radar-label" id="radarStatus">SCANNING — AWAITING INPUT</div>
+      <div class="toggle-row" style="margin-top:0.7rem;">
+        <span class="toggle-label">Generate heatmap</span>
+        <label class="toggle">
+          <input type="checkbox" checked id="toggleHeatmap"/>
+          <span class="toggle-track"></span>
+          <span class="toggle-thumb"></span>
+        </label>
+      </div>
+      <div class="toggle-row" style="margin-top:0.7rem;">
+        <span class="toggle-label">Auto-generate PDF report</span>
+        <label class="toggle">
+          <input type="checkbox" checked id="toggleReport"/>
+          <span class="toggle-track"></span>
+          <span class="toggle-thumb"></span>
+        </label>
       </div>
     </div>
-
-    <!-- STATS PANEL -->
-    <div class="panel fade-up delay-2">
-      <div class="panel-header">
-        <div class="panel-title"><span class="icon">📊</span> DETECTION METRICS</div>
-        <div class="panel-id">MOD-STAT-03</div>
-      </div>
-      <div class="stats-grid">
-        <div class="stat-cell">
-          <div class="stat-val g" id="statEvents">—</div>
-          <div class="stat-lbl">Events</div>
-        </div>
-        <div class="stat-cell">
-          <div class="stat-val y" id="statFrames">—</div>
-          <div class="stat-lbl">Frames</div>
-        </div>
-        <div class="stat-cell">
-          <div class="stat-val r" id="statPeople">—</div>
-          <div class="stat-lbl">Persons</div>
-        </div>
-        <div class="stat-cell">
-          <div class="stat-val g" id="statConf">—</div>
-          <div class="stat-lbl">Avg Conf</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- LOG PANEL -->
-    <div class="panel fade-up delay-3">
-      <div class="panel-header">
-        <div class="panel-title"><span class="icon">📋</span> EVENT LOG</div>
-        <div class="panel-id">MOD-LOG-04</div>
-      </div>
-      <div class="log-body" id="resultsList">
-        <div class="empty">
-          <div class="empty-icon">▣</div>
-          <div class="empty-text">NO EVENTS LOGGED<br/>AWAITING VIDEO FEED</div>
-        </div>
-      </div>
-      <a href="#" class="btn-dl" id="dlBtn" style="display:none" target="_blank" rel="noopener noreferrer">
-        ⬇ &nbsp;EXPORT PDF REPORT
-      </a>
-    </div>
-
-    <!-- MODELS PANEL -->
-    <div class="panel fade-up delay-3">
-      <div class="panel-header">
-        <div class="panel-title"><span class="icon">⚙</span> ACTIVE MODULES</div>
-        <div class="panel-id">MOD-SYS-05</div>
-      </div>
-      <div class="chips">
-        <span class="chip on">YOLOv8</span>
-        <span class="chip on">MEDIAPIPE</span>
-        <span class="chip on">FASTAPI</span>
-        <span class="chip">OPENCV</span>
-        <span class="chip">FFMPEG</span>
-        <span class="chip">FPDF2</span>
-      </div>
-    </div>
-
   </div>
-</div>
 
-<!-- TOAST -->
-<div id="toast"><span id="toastMsg"></span></div>
+  <!-- Analyse Button -->
+  <button class="btn-analyze" id="analyzeBtn" disabled onclick="startAnalysis()">
+    ⚡ Analyse Video
+  </button>
+
+  <!-- Progress -->
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-header">
+      <div class="progress-title">Analysing footage…</div>
+      <div class="progress-pct" id="progressPct">0%</div>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-stage" id="progressStage">Initialising…</div>
+  </div>
+
+  <!-- Results -->
+  <div class="results-wrap" id="resultsWrap">
+    <div class="results-header">
+      Analysis Complete <span>// results below</span>
+    </div>
+
+    <div class="verdict-card" id="verdictCard">
+      <div class="verdict-icon" id="verdictIcon"></div>
+      <div>
+        <div class="verdict-title" id="verdictTitle"></div>
+        <div class="verdict-desc" id="verdictDesc"></div>
+      </div>
+      <div class="confidence-pill" id="verdictConf"></div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-num" id="statFrames">—</div>
+        <div class="stat-lbl">Frames<br/>Analysed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="statPersons">—</div>
+        <div class="stat-lbl">Persons<br/>Detected</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="statEvents">—</div>
+        <div class="stat-lbl">Littering<br/>Events</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="statConf">—</div>
+        <div class="stat-lbl">Avg.<br/>Confidence</div>
+      </div>
+    </div>
+
+    <div class="timeline-card">
+      <div class="timeline-title">Event Timeline</div>
+      <div class="timeline" id="timeline"></div>
+    </div>
+
+    <div id="reportBtnWrap"></div>
+  </div>
+
+</main>
+
+<footer>LitterWatch · Smart Littering Detection System · AI-Powered Analysis</footer>
 
 <script>
-/* ═══════════════════════════════
-   CONFIG
-═══════════════════════════════ */
-const API_URL = "https://YOUR-USERNAME-YOUR-SPACE.hf.space"; // 🔧 Replace!
+// ══════════════════════════════════════════════════════
+//  CONFIGURATION
+//  Paste your Hugging Face Space URL below
+// ══════════════════════════════════════════════════════
+let API_URL = "https://diwakar237-smart-littering-detection.hf.space";
 
-/* ═══════════════════════════════
-   CLOCK
-═══════════════════════════════ */
-function updateClock() {
-  const now = new Date();
-  document.getElementById('sysTime').textContent =
-    now.toTimeString().slice(0,8) + ' IST';
-}
-setInterval(updateClock, 1000);
-updateClock();
-
-/* ═══════════════════════════════
-   PARTICLES
-═══════════════════════════════ */
-(function(){
-  const canvas = document.getElementById('particles');
-  const ctx = canvas.getContext('2d');
-  let W, H, pts = [];
-
-  function resize() {
-    W = canvas.width = window.innerWidth;
-    H = canvas.height = window.innerHeight;
-  }
-  resize();
-  window.addEventListener('resize', resize);
-
-  for(let i = 0; i < 60; i++) pts.push({
-    x: Math.random()*2000, y: Math.random()*1200,
-    vx: (Math.random()-.5)*.3, vy: (Math.random()-.5)*.3,
-    r: Math.random()*1.5+.5, a: Math.random()
-  });
-
-  function draw() {
-    ctx.clearRect(0,0,W,H);
-    pts.forEach(p => {
-      p.x += p.vx; p.y += p.vy;
-      if(p.x<0||p.x>W) p.vx*=-1;
-      if(p.y<0||p.y>H) p.vy*=-1;
-      ctx.beginPath();
-      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-      ctx.fillStyle = `rgba(0,255,100,${p.a*.3})`;
-      ctx.fill();
-    });
-    // connections
-    for(let i=0;i<pts.length;i++) {
-      for(let j=i+1;j<pts.length;j++) {
-        const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y;
-        const d=Math.sqrt(dx*dx+dy*dy);
-        if(d<120) {
-          ctx.beginPath();
-          ctx.moveTo(pts[i].x,pts[i].y);
-          ctx.lineTo(pts[j].x,pts[j].y);
-          ctx.strokeStyle=`rgba(0,255,100,${(1-d/120)*.08})`;
-          ctx.stroke();
-        }
-      }
-    }
-    requestAnimationFrame(draw);
-  }
-  draw();
-})();
-
-/* ═══════════════════════════════
-   RADAR SWEEP
-═══════════════════════════════ */
-let sweepAngle = 0;
-function animateRadar() {
-  sweepAngle += 1.2;
-  const sweep = document.getElementById('radarSweep');
-  if(sweep) sweep.style.transform = `rotate(${sweepAngle}deg)`;
-  requestAnimationFrame(animateRadar);
-}
-animateRadar();
-
-/* ═══════════════════════════════
-   SLIDER
-═══════════════════════════════ */
-const confSlider = document.getElementById('confSlider');
-const confVal    = document.getElementById('confVal');
-confSlider.addEventListener('input', () => {
-  const pct = ((confSlider.value - confSlider.min) / (confSlider.max - confSlider.min)) * 100;
-  confSlider.style.setProperty('--pct', pct + '%');
-  confVal.textContent = parseFloat(confSlider.value).toFixed(2);
+// ── On page load — auto check backend ─────────────────
+window.addEventListener('load', () => {
+  checkBackend();
 });
-// init
-confSlider.style.setProperty('--pct', '47%');
 
-/* ═══════════════════════════════
-   FILE HANDLING
-═══════════════════════════════ */
+// ── Backend connection check ───────────────────────────
+async function checkBackend() {
+  setApiStatus('checking', 'Checking…');
+
+  try {
+    const res = await fetch(`${API_URL}/`, {
+      method: 'GET',
+      mode: 'cors',
+      signal: AbortSignal.timeout(8000)
+    });
+    if (res.ok) {
+      setApiStatus('online', 'Backend Online ✓');
+      hideError();
+      updateAnalyzeBtn();
+    } else {
+      setApiStatus('offline', 'Backend Error');
+      showError(`Backend responded with status ${res.status}. Check your Hugging Face Space is running.`);
+    }
+  } catch (e) {
+    setApiStatus('offline', 'Cannot Reach Backend');
+    showError(`Cannot connect to backend. Make sure your Hugging Face Space URL is correct and the Space is running.\n\nURL tried: ${API_URL}`);
+  }
+}
+
+function setApiStatus(state, text) {
+  const dot  = document.getElementById('apiDot');
+  const label = document.getElementById('apiStatusText');
+  dot.className = `api-dot ${state}`;
+  label.textContent = text;
+}
+
+// ── File handling ──────────────────────────────────────
 const dropZone   = document.getElementById('dropZone');
 const fileInput  = document.getElementById('fileInput');
-const filePreview= document.getElementById('filePreview');
-const analyzeBtn = document.getElementById('analyzeBtn');
+const filePreview = document.getElementById('filePreview');
 let selectedFile = null;
+let currentJobId = null;
 
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
 dropZone.addEventListener('drop', e => {
-  e.preventDefault(); dropZone.classList.remove('drag-over');
+  e.preventDefault(); dropZone.classList.remove('dragover');
   const f = e.dataTransfer.files[0];
-  if(f) setFile(f);
+  if (f && f.type.startsWith('video/')) setFile(f);
+  else showError("Please upload a valid video file (MP4, MOV, AVI, MKV).");
 });
-fileInput.addEventListener('change', () => { if(fileInput.files[0]) setFile(fileInput.files[0]); });
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) setFile(fileInput.files[0]);
+});
+
+document.getElementById('removeFile').addEventListener('click', clearFile);
 
 function setFile(f) {
   selectedFile = f;
   document.getElementById('fileName').textContent = f.name;
-  document.getElementById('fileSize').textContent = fmtSize(f.size);
-  filePreview.classList.add('visible');
-  dropZone.style.display = 'none';
-  analyzeBtn.disabled = false;
-  document.getElementById('radarStatus').textContent = 'TARGET ACQUIRED — READY';
+  document.getElementById('fileMeta').textContent = `${(f.size/1048576).toFixed(1)} MB · ready to analyse`;
+  filePreview.classList.add('show');
+  hideError();
+  updateAnalyzeBtn();
 }
 
-document.getElementById('removeFile').addEventListener('click', () => {
-  selectedFile = null; fileInput.value = '';
-  filePreview.classList.remove('visible');
-  dropZone.style.display = '';
-  analyzeBtn.disabled = true;
-  resetAll();
-  document.getElementById('radarStatus').textContent = 'SCANNING — AWAITING INPUT';
-});
+function clearFile() {
+  selectedFile = null;
+  filePreview.classList.remove('show');
+  fileInput.value = '';
+  updateAnalyzeBtn();
+  document.getElementById('progressWrap').classList.remove('show');
+  document.getElementById('resultsWrap').classList.remove('show');
+}
 
-/* ═══════════════════════════════
-   ANALYZE
-═══════════════════════════════ */
-analyzeBtn.addEventListener('click', async () => {
-  if(!selectedFile) return;
+function updateAnalyzeBtn() {
+  const apiReady  = document.getElementById('apiDot').classList.contains('online');
+  const fileReady = !!selectedFile;
+  document.getElementById('analyzeBtn').disabled = !(apiReady && fileReady);
+}
 
-  analyzeBtn.disabled = true;
-  document.getElementById('progressWrap').classList.add('visible');
-  document.getElementById('dlBtn').style.display = 'none';
-  document.getElementById('resultsList').innerHTML =
-    '<div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">PROCESSING FEED…</div></div>';
-  resetStats();
-  setBlips(false);
-  document.getElementById('radarStatus').textContent = 'ACTIVE SCAN IN PROGRESS…';
+// ── Analysis ───────────────────────────────────────────
+async function startAnalysis() {
+  if (!selectedFile || !API_URL) return;
 
-  const fd = new FormData();
-  fd.append('file', selectedFile);
-  fd.append('model', document.getElementById('modelSel').value);
-  fd.append('frame_interval', document.getElementById('frameSel').value);
-  fd.append('confidence', confSlider.value);
+  document.getElementById('analyzeBtn').disabled = true;
+  document.getElementById('resultsWrap').classList.remove('show');
+  document.getElementById('progressWrap').classList.add('show');
+  document.getElementById('reportBtnWrap').innerHTML = '';
+  hideError();
+
+  setProgress(5, 'Uploading video…');
 
   try {
-    startProgress();
-    const res = await fetch(`${API_URL}/detect`, { method:'POST', body:fd });
-    if(!res.ok) throw new Error(`SERVER ERROR ${res.status}`);
-    const data = await res.json();
-    finishProgress();
-    renderResults(data);
-    setBlips(true);
-    document.getElementById('radarStatus').textContent = `${data.total_events ?? 0} EVENTS DETECTED`;
-    toast('success', `✓ SCAN COMPLETE — ${data.total_events ?? 0} events logged`);
-  } catch(err) {
-    finishProgress();
-    document.getElementById('resultsList').innerHTML =
-      `<div class="empty"><div class="empty-icon">⚠</div><div class="empty-text">${err.message}</div></div>`;
-    document.getElementById('radarStatus').textContent = 'SCAN FAILED';
-    toast('error', '✕ ' + err.message);
-  } finally {
-    analyzeBtn.disabled = false;
-  }
-});
+    // ── Upload video ───────────────────────────────────
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    formData.append('confidence', document.getElementById('confRange').value / 100);
+    formData.append('track_persons', document.getElementById('toggleTrack').checked);
+    formData.append('generate_heatmap', document.getElementById('toggleHeatmap').checked);
 
-/* ═══════════════════════════════
-   RENDER RESULTS
-═══════════════════════════════ */
-function renderResults(data) {
-  document.getElementById('statEvents').textContent = data.total_events ?? '—';
-  document.getElementById('statFrames').textContent = data.frames_analyzed ?? '—';
-  document.getElementById('statPeople').textContent = data.people_detected ?? '—';
-  document.getElementById('statConf').textContent   = data.avg_confidence
-    ? (data.avg_confidence * 100).toFixed(0) + '%' : '—';
+    const uploadRes = await fetch(`${API_URL}/analyse`, {
+      method: 'POST',
+      mode: 'cors',
+      body: formData,
+    });
 
-  const events = data.events || [];
-  const list = document.getElementById('resultsList');
-  if(!events.length) {
-    list.innerHTML = '<div class="empty"><div class="empty-icon">✓</div><div class="empty-text">NO LITTERING EVENTS DETECTED</div></div>';
-    return;
-  }
-  list.innerHTML = '';
-  events.forEach((ev, i) => {
-    const c = ev.confidence || 0;
-    const cls = c > 0.75 ? 'hi' : c > 0.5 ? 'md' : 'lo';
-    const item = document.createElement('div');
-    item.className = `log-item ${cls}`;
-    item.style.animationDelay = `${i * 0.06}s`;
-    item.innerHTML = `
-      <div class="log-dot"></div>
-      <div class="log-frame">FRAME_${String(ev.frame ?? i+1).padStart(4,'0')}</div>
-      <div class="log-conf">${(c*100).toFixed(1)}%</div>
-    `;
-    list.appendChild(item);
-  });
-
-  if(data.report_url) {
-    const dl = document.getElementById('dlBtn');
-    dl.href = API_URL + data.report_url;
-    dl.style.display = 'flex';
-  }
-}
-
-/* ═══════════════════════════════
-   PROGRESS
-═══════════════════════════════ */
-const stages = ['UPLOAD','EXTRACT','DETECT','TRACK','REPORT'];
-let progTimer, progPct = 0, progSi = 0;
-
-function startProgress() {
-  progPct = 0; progSi = 0;
-  stages.forEach((_,i) => {
-    const el = document.getElementById('s'+i);
-    if(el) el.className = 'stage';
-  });
-  document.getElementById('s0').classList.add('active');
-  document.getElementById('progressFill').style.width = '0%';
-  document.getElementById('progressPct').textContent = '0%';
-
-  progTimer = setInterval(() => {
-    progPct = Math.min(progPct + Math.random() * 3, 90);
-    document.getElementById('progressFill').style.width = progPct + '%';
-    document.getElementById('progressPct').textContent = Math.floor(progPct) + '%';
-    const si = Math.min(Math.floor(progPct / 20), 4);
-    if(si !== progSi) {
-      document.getElementById('s'+progSi).className = 'stage done';
-      progSi = si;
-      const el = document.getElementById('s'+progSi);
-      if(el) el.classList.add('active');
-      document.getElementById('progressStage').textContent = stages[si] + '…';
+    if (!uploadRes.ok) {
+      const err = await uploadRes.json().catch(() => ({}));
+      throw new Error(err.detail || `Upload failed (${uploadRes.status})`);
     }
-  }, 200);
+
+    const job = await uploadRes.json();
+    currentJobId = job.job_id;
+
+    setProgress(10, 'Video uploaded — queued for analysis…');
+
+    // ── Poll for result ────────────────────────────────
+    await pollJob(currentJobId);
+
+  } catch (err) {
+    showError(`Error: ${err.message}`);
+    document.getElementById('progressWrap').classList.remove('show');
+    document.getElementById('analyzeBtn').disabled = false;
+  }
 }
 
-function finishProgress() {
-  clearInterval(progTimer);
-  document.getElementById('progressFill').style.width = '100%';
-  document.getElementById('progressPct').textContent = '100%';
-  document.getElementById('progressStage').textContent = 'COMPLETE';
-  stages.forEach((_,i) => {
-    const el = document.getElementById('s'+i);
-    if(el) el.className = 'stage done';
-  });
-  setTimeout(() => document.getElementById('progressWrap').classList.remove('visible'), 2000);
+async function pollJob(jobId) {
+  const stageLabels = {
+    frame_extraction:   'Extracting frames…',
+    object_detection:   'Detecting objects (YOLOv8)…',
+    behaviour_analysis: 'Analysing behaviour…',
+    heatmap_generation: 'Generating heatmap…',
+    report_compile:     'Compiling report…',
+    done:               'Analysis complete!',
+  };
+
+  while (true) {
+    await sleep(1500);
+
+    const res  = await fetch(`${API_URL}/status/${jobId}`, { mode: 'cors' });
+    const data = await res.json();
+
+    const label = stageLabels[data.stage] || 'Processing…';
+    setProgress(data.progress || 0, label);
+
+    if (data.status === 'done') {
+      showResults(data.result, jobId);
+      return;
+    }
+
+    if (data.status === 'error') {
+      throw new Error(data.error || 'Analysis failed on the server.');
+    }
+  }
 }
 
-/* ═══════════════════════════════
-   HELPERS
-═══════════════════════════════ */
-function resetStats() {
-  ['statEvents','statFrames','statPeople','statConf'].forEach(id => {
-    document.getElementById(id).textContent = '—';
-  });
-  document.getElementById('dlBtn').style.display = 'none';
+// ── Show Results ───────────────────────────────────────
+function showResults(result, jobId) {
+  document.getElementById('progressWrap').classList.remove('show');
+  document.getElementById('analyzeBtn').disabled = false;
+
+  // Verdict
+  const vc = document.getElementById('verdictCard');
+  vc.className = 'verdict-card ' + (result.littering_detected ? 'littering' : 'clean');
+  document.getElementById('verdictIcon').textContent = result.littering_detected ? '⚠️' : '✅';
+  document.getElementById('verdictTitle').textContent = result.littering_detected
+    ? 'Littering Detected' : 'No Littering Detected';
+  document.getElementById('verdictDesc').textContent = result.littering_detected
+    ? `${result.event_count} littering event(s) found. See timeline below.`
+    : 'No littering behaviour was detected in the uploaded footage.';
+  document.getElementById('verdictConf').textContent =
+    `${(result.avg_confidence * 100).toFixed(0)}% avg conf.`;
+
+  // Stats
+  document.getElementById('statFrames').textContent  = result.frames_analysed;
+  document.getElementById('statPersons').textContent = result.persons_detected;
+  document.getElementById('statEvents').textContent  = result.event_count;
+  document.getElementById('statConf').textContent    = `${(result.avg_confidence * 100).toFixed(0)}%`;
+
+  // Timeline
+  const timeline = document.getElementById('timeline');
+  timeline.innerHTML = '';
+
+  if (result.events && result.events.length > 0) {
+    result.events.forEach((ev, i) => {
+      addEvent(timeline, ev.timestamp_str, ev.description, 'alert', 'LITTERING', i * 100);
+    });
+  }
+  addEvent(timeline, '00:00', 'Analysis started', 'info', 'INFO', result.events.length * 100);
+  addEvent(timeline, fmtTime(result.duration_s), 'Analysis complete', 'ok', 'DONE', result.events.length * 100 + 100);
+
+  // PDF Report button
+  if (document.getElementById('toggleReport').checked) {
+    document.getElementById('reportBtnWrap').innerHTML = `
+      <a class="btn-report" href="${API_URL}/report/${jobId}" target="_blank" download>
+        📄 Download PDF Report
+      </a>
+    `;
+  }
+
+  document.getElementById('resultsWrap').classList.add('show');
 }
-function resetAll() {
-  resetStats();
-  document.getElementById('resultsList').innerHTML =
-    '<div class="empty"><div class="empty-icon">▣</div><div class="empty-text">NO EVENTS LOGGED<br/>AWAITING VIDEO FEED</div></div>';
+
+// ── Helpers ────────────────────────────────────────────
+function setProgress(pct, stage) {
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressPct').textContent  = pct + '%';
+  document.getElementById('progressStage').textContent = stage;
 }
-function setBlips(on) {
-  ['blip1','blip2','blip3'].forEach((id,i) => {
-    const el = document.getElementById(id);
-    if(el) el.style.opacity = on ? (0.6 + i*0.1) : 0;
-  });
+
+function addEvent(container, time, label, type, badge, delay) {
+  const el = document.createElement('div');
+  el.className = `timeline-event ${type}`;
+  el.style.animationDelay = delay + 'ms';
+  el.innerHTML = `
+    <span class="evt-time">${time}</span>
+    <span class="evt-label">${label}</span>
+    <span class="evt-badge">${badge}</span>
+  `;
+  container.appendChild(el);
 }
-function fmtSize(b) {
-  return b < 1048576 ? (b/1024).toFixed(1)+' KB' : (b/1048576).toFixed(1)+' MB';
+
+function fmtTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
 }
-let toastT;
-function toast(type, msg) {
-  const t = document.getElementById('toast');
-  document.getElementById('toastMsg').textContent = msg;
-  t.className = type; t.classList.add('show');
-  clearTimeout(toastT);
-  toastT = setTimeout(() => t.classList.remove('show'), 3800);
+
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  box.textContent = '⚠ ' + msg;
+  box.classList.add('show');
 }
+
+function hideError() {
+  document.getElementById('errorBox').classList.remove('show');
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 </script>
 </body>
 </html>
