@@ -21,6 +21,97 @@
     --safe: #4cff7e;
   }
 
+  /* ── THEMES ── */
+  [data-theme="green"] {
+    --bg: #0b0f0e; --surface: #111714; --surface2: #182019;
+    --border: #1f2e21; --accent: #4cff7e; --accent-dim: #1e4a27;
+    --accent2: #ff4c4c; --text: #e8f0e9; --text-muted: #7a9980;
+    --text-dim: #3d5440; --warn: #ffb84c; --safe: #4cff7e;
+  }
+  [data-theme="blue"] {
+    --bg: #090d14; --surface: #0f1520; --surface2: #141c2a;
+    --border: #1a2840; --accent: #38bdf8; --accent-dim: #0c2a3d;
+    --accent2: #f87171; --text: #ddeeff; --text-muted: #5f87b0;
+    --text-dim: #2a4060; --warn: #fbbf24; --safe: #34d399;
+  }
+  [data-theme="purple"] {
+    --bg: #0d0b14; --surface: #130f1e; --surface2: #1a1428;
+    --border: #2a1f45; --accent: #a78bfa; --accent-dim: #2a1f50;
+    --accent2: #f472b6; --text: #ede8ff; --text-muted: #7c6faa;
+    --text-dim: #3d2f6a; --warn: #fb923c; --safe: #a78bfa;
+  }
+  [data-theme="amber"] {
+    --bg: #0f0c07; --surface: #181208; --surface2: #201908;
+    --border: #332500; --accent: #f59e0b; --accent-dim: #3d2a00;
+    --accent2: #ef4444; --text: #fef3c7; --text-muted: #92714a;
+    --text-dim: #4a3000; --warn: #fb923c; --safe: #4ade80;
+  }
+  [data-theme="red"] {
+    --bg: #0f0808; --surface: #1a0e0e; --surface2: #221212;
+    --border: #3a1515; --accent: #ff5555; --accent-dim: #3d1010;
+    --accent2: #ff9900; --text: #ffe8e8; --text-muted: #a06060;
+    --text-dim: #5a2020; --warn: #fb923c; --safe: #4ade80;
+  }
+
+  /* ── LIGHT THEME ── */
+  [data-mode="light"] {
+    --bg: #f4f7f4; --surface: #ffffff; --surface2: #eaf2eb;
+    --border: #c8deca; --accent: #16a34a; --accent-dim: #dcfce7;
+    --accent2: #dc2626; --text: #0f1f12; --text-muted: #4a7055;
+    --text-dim: #a3c4a8; --warn: #d97706; --safe: #16a34a;
+  }
+  [data-mode="light"] header {
+    background: rgba(244,247,244,0.92);
+  }
+  [data-mode="light"] body::before {
+    background-image:
+      linear-gradient(rgba(22,163,74,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(22,163,74,0.06) 1px, transparent 1px);
+  }
+
+  /* ── DARK/LIGHT TOGGLE BUTTON ── */
+  .mode-toggle {
+    display: flex; align-items: center; gap: 7px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 12px 5px 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  .mode-toggle:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .mode-toggle-icon { font-size: 0.9rem; line-height: 1; transition: transform 0.4s ease; }
+  .mode-toggle:hover .mode-toggle-icon { transform: rotate(20deg); }
+
+  /* ── THEME SWITCHER UI ── */
+  .theme-switcher { display: flex; align-items: center; gap: 6px; }
+  .theme-btn {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer; transition: all 0.2s;
+    padding: 0; outline: none;
+  }
+  .theme-btn:hover { transform: scale(1.25); }
+  .theme-btn.active { border-color: var(--text); box-shadow: 0 0 8px rgba(255,255,255,0.3); }
+  .theme-btn[data-t="green"]  { background: #4cff7e; }
+  .theme-btn[data-t="blue"]   { background: #38bdf8; }
+  .theme-btn[data-t="purple"] { background: #a78bfa; }
+  .theme-btn[data-t="amber"]  { background: #f59e0b; }
+  .theme-btn[data-t="red"]    { background: #ff5555; }
+  .theme-divider { width: 1px; height: 18px; background: var(--border); margin: 0 4px; }
+  .theme-label {
+    font-family: 'DM Mono', monospace; font-size: 0.6rem;
+    color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase;
+  }
+
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
@@ -663,7 +754,7 @@
   }
 </style>
 </head>
-<body>
+<body data-theme="green">
 
 <header>
   <div class="logo">
@@ -671,6 +762,22 @@
     LitterWatch
   </div>
   <div style="display:flex; align-items:center; gap:1rem;">
+    <!-- Dark / Light toggle -->
+    <button class="mode-toggle" id="modeToggle" onclick="toggleMode()">
+      <span class="mode-toggle-icon" id="modeIcon">🌙</span>
+      <span id="modeLabel">DARK</span>
+    </button>
+    <div class="theme-divider"></div>
+    <!-- Theme Switcher -->
+    <div class="theme-switcher">
+      <span class="theme-label">Theme</span>
+      <button class="theme-btn active" data-t="green"  title="Green"  onclick="setTheme('green')"></button>
+      <button class="theme-btn"        data-t="blue"   title="Blue"   onclick="setTheme('blue')"></button>
+      <button class="theme-btn"        data-t="purple" title="Purple" onclick="setTheme('purple')"></button>
+      <button class="theme-btn"        data-t="amber"  title="Amber"  onclick="setTheme('amber')"></button>
+      <button class="theme-btn"        data-t="red"    title="Red"    onclick="setTheme('red')"></button>
+    </div>
+    <div class="theme-divider"></div>
     <div class="api-status">
       <div class="api-dot checking" id="apiDot"></div>
       <span id="apiStatusText">Checking backend…</span>
@@ -1057,6 +1164,37 @@ function showError(msg) {
 function hideError() {
   document.getElementById('errorBox').classList.remove('show');
 }
+
+// ── DARK / LIGHT MODE TOGGLE ───────────────────────────
+function toggleMode() {
+  const isLight = document.body.getAttribute('data-mode') === 'light';
+  const newMode = isLight ? 'dark' : 'light';
+  document.body.setAttribute('data-mode', newMode);
+  document.getElementById('modeIcon').textContent  = isLight ? '🌙' : '☀️';
+  document.getElementById('modeLabel').textContent = isLight ? 'DARK' : 'LIGHT';
+  localStorage.setItem('lw-mode', newMode);
+}
+
+// ── THEME SWITCHER ─────────────────────────────────────
+function setTheme(name) {
+  document.body.setAttribute('data-theme', name);
+  document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.t === name);
+  });
+  localStorage.setItem('lw-theme', name);
+}
+
+// Restore saved theme and mode on load
+(function() {
+  const savedTheme = localStorage.getItem('lw-theme');
+  if (savedTheme) setTheme(savedTheme);
+  const savedMode = localStorage.getItem('lw-mode');
+  if (savedMode === 'light') {
+    document.body.setAttribute('data-mode', 'light');
+    document.getElementById('modeIcon').textContent  = '☀️';
+    document.getElementById('modeLabel').textContent = 'LIGHT';
+  }
+})();
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 </script>
